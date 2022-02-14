@@ -251,7 +251,6 @@ def read_ligand_complex(file_name, name, chain, pos):
                 if protein_ligand in set(['HETATM', 'ATOM  ']) and chainID == chain and position == pos:
                     if (altLoc == ' ' or altLoc == 'A') and ligand_name == target_ligand:
                         index_list.append(idx)
-                        print(axes)
                         data.append((atomSym,[float(i) for i in axes]))
                     else:
                         incomplete_indicator = True
