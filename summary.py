@@ -70,11 +70,7 @@ all_ligand_length
 
 # create a binary pickle file
 f = open("all_ligand_length.pkl","wb")
-
-# write the python object (dict) to pickle file
 pickle.dump(all_ligand_length,f)
-
-# close file
 f.close()
 #
 # if __name__ == '__main__':
