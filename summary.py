@@ -1,5 +1,6 @@
 from script.utils import *
 import os
+import time
 os.getcwd()
 
 # DIR -------------------------------------------------
@@ -21,6 +22,7 @@ with open(all_ligand_data_file, 'r') as f:
 ## 2. Keep VALID ligands (no missing atoms aka the LONGEST)
 
 pdbid_download = []
+t1 = time.time()
 with open(target_ligands_file, 'r') as file:
     for count, ligand in enumerate(file):
         # Read ligand ---------
@@ -57,14 +59,23 @@ with open(target_ligands_file, 'r') as file:
                         all_ligand_atom_type[ligand_name].append([pdbid, ligand_atom, axes])
                         all_ligand_length[ligand_name].append([pdbid,len(ligand_atom)])
             except:
-                print('print pdbbid',pdbid)
+                print('print pdbid',pdbid)
                 pdbid_download.append(pdbid)
 
-            if count // 1000:
-                print('print count',count, pdbid)
+            if (count // 2000) == 1:
+                print('time:', time.time() - t1)
+print('Finished!')
+all_ligand_atom_type
+all_ligand_length
 
-# all_ligand_atom_type
-# all_ligand_length
+# create a binary pickle file
+f = open("all_ligand_length.pkl","wb")
+
+# write the python object (dict) to pickle file
+pickle.dump(all_ligand_length,f)
+
+# close file
+f.close()
 #
 # if __name__ == '__main__':
 
