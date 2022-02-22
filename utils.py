@@ -146,8 +146,7 @@ def f_molecule_not_end(idx,lines, chain, pos):
 
 
 
-# lst = read_ligand_complex('./data/2w1u.pdb', 'NGA NAG', 'E', '1')
-def read_ligand_complex_old(file_name, name, chain, pos):
+def read_ligand_complex(file_name, name, chain, pos):
     '''
     Read multi-molecule ligand from pdb
 
@@ -175,6 +174,7 @@ def read_ligand_complex_old(file_name, name, chain, pos):
 
             assert len(lines[0]) == len(lines[1]) #???
             for index, line in enumerate(lines):
+                protein_ligand, ligand_name, chainID, position, altLoc, _, axes = f_read_pdb_line(index, lines)
                 if line[0:6] in set(['HETATM', 'ATOM  ']) and chainID == chain and position == pos:
 
                     ligand_name = line[17:20].strip()
@@ -195,11 +195,11 @@ def read_ligand_complex_old(file_name, name, chain, pos):
                     if (altLoc == ' ' or altLoc == 'A'):  # skip alternate position:
                         if ligand_name == target_ligand:
                             index_list.append(index)
-                            data.append(atomSym)
+                            data.append((atomSym,[float(i) for i in axes]))
                         else:
                             incomplete_indicator = True
                             break
-
+                    end = f_molecule_not_end(index, lines, chain, pos)
                     if (next_position != position or (lines[index + 1][0:6] not in set(['HETATM', 'ATOM  ']))
                         or next_chainID != chainID) and ((next_next_position != position or next_next_chainID != chainID) or lines[index + 2][0:6] not in set(['HETATM', 'ATOM  '])):
                         name_list.popleft()
@@ -207,7 +207,6 @@ def read_ligand_complex_old(file_name, name, chain, pos):
                         break
             if incomplete_indicator:
                 break
-            # print(index_list)
 
             pos = str(int(pos) + 1)
 
@@ -215,63 +214,9 @@ def read_ligand_complex_old(file_name, name, chain, pos):
             # print(f'ligand {name} complex reading is failed')
             return 1
         else:
-            return (list(set(data)), data)
-
-
-def read_ligand_complex(file_name, name, chain, pos):
-    '''
-    Read multi-molecule ligand from pdb
-
-    :param file_name: './abcd.pdb'
-    :param name: ligand name 'NGA NAG'
-    :param chain: chain 'A','B',...
-    :param pos: position '1','2',...
-
-    :return: ???
-        1
-        (list(set(data)), data)
-    '''
-
-    tmp_name_list = name.split(' ')  # ['ABC', 'BCD', 'EFG', 'FGH']
-    numLigands = len(tmp_name_list)
-    name_list = deque(tmp_name_list)
-    data = []
-    index_list = []
-    incomplete_indicator = False
-
-    with open(file_name) as f:
-        lines = f.readlines()
-        for i in range(numLigands):
-            target_ligand = name_list[0]
-
-            assert len(lines[0]) == len(lines[1]) #???
-            for idx in range(len(lines)):
-                protein_ligand, ligand_name, chainID, position, \
-                    altLoc, atomSym, axes = f_read_pdb_line(idx, lines)
-                if protein_ligand in set(['HETATM', 'ATOM  ']) and chainID == chain and position == pos:
-                    if (altLoc == ' ' or altLoc == 'A') and ligand_name == target_ligand:
-                        index_list.append(idx)
-                        data.append((atomSym,[float(i) for i in axes]))
-                    else:
-                        incomplete_indicator = True
-                        break
-
-                    # Judge the end of a molecule
-                    end = f_molecule_not_end(idx,lines, chain, pos)
-                    if end:
-                        name_list.popleft()
-                        break
-
-            if incomplete_indicator:
-                break
-
-            pos = str(int(pos) + 1)
-
-        if len(name_list) != 0:
-            return 1
-        else:
             return data
 
+# lst = read_ligand_complex('./data/2w1u.pdb', 'NGA NAG', 'F', '1')
 
 def label_atom(resname,atom):
     atom_label={
