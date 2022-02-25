@@ -144,8 +144,6 @@ def f_molecule_not_end(idx,lines, chain, pos):
     out = not(next and next2)
     return not out
 
-
-
 def read_ligand_complex(file_name, name, chain, pos):
     '''
     Read multi-molecule ligand from pdb
