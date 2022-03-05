@@ -209,7 +209,6 @@ def label_atom(resname,atom):
 
 THRESHOLD = 6
 data = []
-count_valid = 0
 count_ligands = 0
 ligand_name_cache = []
 t1 = time.time()
@@ -217,14 +216,13 @@ for k, v in file.items():
     try:
         ligand_name = k
         ligand_length = ligand_len[k]
+        count_ligands += 1
         N = len(v)
         for n in range(N):
             # ligand axes
             pdbid = v[n][0]
             ligand_coords = v[n][2] # coords of ligand atoms
-            count_ligands += 1
             if len(v[n][1]) == ligand_length: # then no missing atoms
-                count_valid += 1
                 
                 # protein coords
                 file_name = './data/'+pdbid.lower()+'.pdb'
@@ -237,16 +235,20 @@ for k, v in file.items():
                 ligand_coords = [[22, *i] for i in ligand_coords]
                 data.append((pdbid, ligand_name, ligand_coords, env_coords))
                 
-        if (count_valid % 1000)==0:
+        if (count_ligands % 1000)==0:
             print(time.time()-t1)
             print('Number of ligand left:',len(file) - count_ligands)
     except:
         print(ligand_name)
         ligand_name_cache.append(ligand_name)
                 
-count_valid/count_ligands # 0.811
+a_file = open("ligand_env_coords.pkl", "wb")
+pickle.dump(data, a_file)
+a_file.close()
 
-        
+temp = open("ligand_name_cache.pkl", "wb")
+pickle.dump(ligand_name_cache, temp)
+temp.close()        
         
         
         
