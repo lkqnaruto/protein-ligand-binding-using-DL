@@ -91,8 +91,8 @@ for i in set(file.keys()):
         print(len(file) - len(ligand_len))
         print(time.time()-t1)
         
-        
-a_file = open("ligand_len.pkl", "wb")
+        [
+a_file = open("ligand_len.pkl", "wb")]
 pickle.dump(ligand_len, a_file)
 a_file.close()
 
