@@ -255,7 +255,7 @@ def axial_1layer(dim):
 
 if __name__=="__main__":
     # model = AxialAttentionNet(AxialBlock, in_channels=24, layers = 1, span = 55, groups = 6)
-    model = axial32s_3layers()
+    model = axial_3layers()
     input = torch.rand((10, 128, 32, 32))
     print(model)
     output = model(input)
