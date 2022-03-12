@@ -224,11 +224,11 @@ class AxialAttentionNet(nn.Module):
 
 
 def axial55s_128():
-    model = AxialAttentionNet(AxialBlock, in_channels=128, layers=1, span=55, groups=8)
+    model = AxialAttentionNet(AxialBlock, in_channels=128, layers=1, span=250, groups=8)
     return model
 
 def axial55s_128_3layers():
-    model = AxialAttentionNet(AxialBlock, in_channels=128, layers=3, span=55, groups=8)
+    model = AxialAttentionNet(AxialBlock, in_channels=128, layers=3, span=250, groups=8)
     return model
 
 def axial55s_256():
@@ -240,22 +240,15 @@ def axial55s_256_3layers():
     return model
 
 def axial32s():
-    model = AxialAttentionNet(AxialBlock, in_channels = 128, layers=1, span=32, groups=8)
+    model = AxialAttentionNet(AxialBlock, in_channels = 128, layers=1, span=1238, groups=8)
     return model
 
-
-
-
-# def axial32s():
-#     model = AxialAttentionNet(AxialBlock, in_channels = 128, layers=1, span=32, groups=8)
-#     return model
-
-def axial32s_3layers():
-    model = AxialAttentionNet(AxialBlock, in_channels = 128, layers=3, span=32, groups=8)
+def axial_3layers(dim):
+    model = AxialAttentionNet(AxialBlock, in_channels = 128, layers=3, span=dim, groups=8)
     return model
 
-def axial16s():
-    model = AxialAttentionNet(AxialBlock, in_channels=256, layers=1, span=16, groups=8)
+def axial_1layer(dim):
+    model = AxialAttentionNet(AxialBlock, in_channels=256, layers=1, span=dim, groups=8)
     return model
 
 

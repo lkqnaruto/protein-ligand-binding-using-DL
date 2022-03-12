@@ -1,11 +1,9 @@
-import sys
-
 import torch
 import torch.nn as nn
 from torch.nn import init
 import functools
 from torch.optim import lr_scheduler
-from . import axial_layer
+import axial_layer
 
 ###############################################################################
 # Helper Functions
@@ -445,7 +443,7 @@ class ResnetBlock(nn.Module):
 class UnetGenerator(nn.Module):
     """Create a Unet-based generator"""
 
-    def __init__(self, input_nc, output_nc, num_downs, ngf=128, norm_layer=nn.InstanceNorm2d, use_dropout=True):
+    def __init__(self, input_nc, output_nc, ngf=128, norm_layer=nn.InstanceNorm2d, use_dropout=True):
         """Construct a Unet generator
         Parameters:
             input_nc (int)  -- the number of channels in input images
@@ -461,13 +459,10 @@ class UnetGenerator(nn.Module):
         super(UnetGenerator, self).__init__()
         # construct unet structure
         unet_block = UnetSkipConnectionBlock(ngf * 16, ngf * 16, input_nc=None, submodule=None, norm_layer=norm_layer, innermost=True, use_dropout=use_dropout)  # add the innermost layer
-        # for i in range(num_downs - 5):          # add intermediate layers with ngf * 8 filters
-        #     unet_block = UnetSkipConnectionBlock(ngf * 32, ngf * 32, input_nc=None, submodule=unet_block, norm_layer=norm_layer, use_dropout=use_dropout)
-        # gradually reduce the number of filters from ngf * 8 to ngf
         unet_block = UnetSkipConnectionBlock(ngf * 8, ngf * 16, input_nc=None, submodule=unet_block, norm_layer=norm_layer, use_dropout=use_dropout)
         unet_block = UnetSkipConnectionBlock(ngf * 4, ngf * 8, input_nc=None, submodule=unet_block, norm_layer=norm_layer, use_dropout=use_dropout)
-        unet_block = UnetSkipConnectionBlock(ngf * 2, ngf * 4, input_nc=None, submodule=unet_block, norm_layer=norm_layer, dims = 16, use_attention=True)
-        unet_block = UnetSkipConnectionBlock(ngf, ngf * 2, input_nc=None, submodule=unet_block, norm_layer=norm_layer, dims = 32, use_attention=True)
+        unet_block = UnetSkipConnectionBlock(ngf * 2, ngf * 4, input_nc=None, submodule=unet_block, norm_layer=norm_layer, dims = 64, use_attention=True)
+        unet_block = UnetSkipConnectionBlock(ngf, ngf * 2, input_nc=None, submodule=unet_block, norm_layer=norm_layer, dims =128, use_attention=True)
         self.model = UnetSkipConnectionBlock(output_nc, ngf, input_nc=input_nc, submodule=unet_block, outermost=True, norm_layer=norm_layer)  # add the outermost layer
 
     def forward(self, input):
@@ -503,7 +498,6 @@ class UnetSkipConnectionBlock(nn.Module):
             use_bias = norm_layer == nn.BatchNorm2d
         if input_nc is None:
             input_nc = outer_nc
-        print(use_bias)
         downconv = self.spectral_norm(nn.Conv2d(input_nc, inner_nc, kernel_size=4,
                              stride=2, padding=1, bias=use_bias, padding_mode='reflect'))
         downrelu = nn.LeakyReLU(0.2, True)
@@ -512,14 +506,21 @@ class UnetSkipConnectionBlock(nn.Module):
         upnorm = norm_layer(outer_nc)
 
         if outermost:
-            downconv_outmost = self.spectral_norm(nn.Conv2d(input_nc, inner_nc, kernel_size=26,
-                                 stride=1, padding=1, bias=True, padding_mode='reflect'))
+            # H, W = 250, C = 24 ???
+            # 24,250,240 -> 128,128,128
+            # 1. stride = 1, moderate kernel_size = 23
+            # downconv_outmost = self.spectral_norm(nn.Conv2d(input_nc, inner_nc, kernel_size=23,
+            #                      stride=1, padding=11, bias=True, padding_mode='reflect'))
+            # upconv_outmost = self.spectral_norm(nn.ConvTranspose2d(inner_nc * 2, outer_nc,
+            #                             kernel_size=23, stride=1, padding=11))
+            # 2. stride = 2, kernel_size = 2, padding = 3
+            downconv_outmost = self.spectral_norm(nn.Conv2d(input_nc, inner_nc, kernel_size=2,
+                                 stride=2, padding=3, bias=True, padding_mode='reflect'))
             upconv_outmost = self.spectral_norm(nn.ConvTranspose2d(inner_nc * 2, outer_nc,
-                                        kernel_size=26, stride=1,
-                                        padding=1))
+                                        kernel_size=2, stride=2, padding=3))
             if use_attention:
                 attention_up = axial_layer.axial32s()
-                down = [downconv_outmost]
+                down = [downconv_outmost] #???
                 up = [uprelu, attention_up, upconv_outmost, nn.Tanh()]
             else:
                 down = [downconv_outmost]
@@ -527,8 +528,7 @@ class UnetSkipConnectionBlock(nn.Module):
             model = down +  [submodule] + up
         elif innermost:
             upconv = self.spectral_norm(nn.ConvTranspose2d(inner_nc, outer_nc,
-                                        kernel_size=4, stride=2,
-                                        padding=1, bias=use_bias))
+                                        kernel_size=4, stride=2, padding=1, bias=use_bias))
             down = [downrelu, downconv]
             up = [uprelu, upconv, upnorm]
             if use_dropout:
@@ -537,15 +537,13 @@ class UnetSkipConnectionBlock(nn.Module):
                 model = down + up
         else:
             upconv = self.spectral_norm(nn.ConvTranspose2d(inner_nc * 2, outer_nc,
-                                        kernel_size=4, stride=2,
-                                        padding=1, bias=use_bias))
+                                        kernel_size=4, stride=2, padding=1, bias=use_bias))
 
-
-            if use_attention and dims == 32:
-                down_attention = axial_layer.axial32s_3layers()
+            if use_attention and dims == 128: # dim = current H
+                down_attention = axial_layer.axial_3layers(dims)
                 down = [downrelu, down_attention, downconv, downnorm]
-            elif use_attention and dims == 16:
-                down_attention = axial_layer.axial16s()
+            elif use_attention and dims == 64:
+                down_attention = axial_layer.axial_1layer(dims)
                 down = [downrelu, down_attention, downconv, downnorm]
             else:
                 down = [downrelu, downconv, downnorm]
@@ -652,3 +650,8 @@ class PixelDiscriminator(nn.Module):
     def forward(self, input):
         """Standard forward."""
         return self.net(input)
+
+
+if __name__ == '__main__':
+    net = UnetGenerator(24,24)
+    print(net)
